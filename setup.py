@@ -11,9 +11,9 @@ setup(
     long_description=open('README.rst').read(),
     keywords=['UPS'],
     install_requires=[
-        'dict2xml == 1.0',
-        'xmltodict == 0.4.2',
-        'requests == 0.14.2'
+        'dict2xml',
+        'xmltodict',
+        'requests'
     ],
     classifiers=[
         'Programming Language :: Python',
