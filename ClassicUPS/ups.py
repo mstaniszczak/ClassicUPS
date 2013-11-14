@@ -195,7 +195,7 @@ class Shipment(object):
     def __init__(self, ups_conn, from_addr, to_addr, dimensions, weight,
                  file_format='EPL', reference_numbers=None, shipping_service='ground',
                  description='', dimensions_unit='IN', weight_unit='LBS',
-                 delivery_confirmation="no_signature"):
+                 delivery_confirmation="no_signature", amount=None):
 
         self.file_format = file_format
         shipping_request = {
@@ -266,12 +266,12 @@ class Shipment(object):
                             },
                             'Weight': weight,
                         },
-                        'PackageServiceOptions': {
-                            # TODO: insured value, etc
-                            'DeliveryConfirmation': {
-                                'DCISType': self.DCIS_TYPES[delivery_confirmation],
-                            }
-                        },
+                        # 'PackageServiceOptions': {
+                        #     # TODO: insured value, etc
+                        #     'DeliveryConfirmation': {
+                        #         'DCISType': self.DCIS_TYPES[delivery_confirmation],
+                        #     }
+                        # },
                     },
                 },
                 'LabelSpecification': {  # TODO: support GIF and EPL (and others)
@@ -289,6 +289,13 @@ class Shipment(object):
                 },
             },
         }
+
+        if shipping_service != 'standard':
+            shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['PackageServiceOptions'] = \
+                {'DeliveryConfirmation': {
+                    'DCISType': self.DCIS_TYPES[delivery_confirmation],
+                    }
+                }
 
         if reference_numbers:
             reference_dict = []
@@ -329,6 +336,23 @@ class Shipment(object):
         if 'ShipmentDigest' not in self.confirm_result.dict_response['ShipmentConfirmResponse']:
             error_string = self.confirm_result.dict_response['ShipmentConfirmResponse']['Response']['Error']['ErrorDescription']
             raise Exception(error_string)
+
+        if amount is not None:
+            if 'PackageServiceOptions' not in shipping_request['ShipmentConfirmRequest']['Shipment']['Package']:
+                shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['PackageServiceOptions'] = {}
+            shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['PackageServiceOptions']['COD'] = {
+                #'COD': {
+                    'CODCode': '3',
+                    'CODFundsCode': '0',
+                    'CODAmount': {
+                        'CurrencyCode': 'PLN',
+                        'MonetaryValue': '122.22',
+                    }
+                #}
+            }
+
+        print shipping_request
+
 
         confirm_result_digest = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentDigest']
         ship_accept_request = {
