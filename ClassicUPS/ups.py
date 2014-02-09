@@ -89,6 +89,7 @@ class UPSConnection(object):
             url = self.test_urls[url_action]
 
         xml = self._generate_xml(url_action, ups_request)
+        print xml
         resp = urllib.urlopen(url, xml.encode('ascii', 'xmlcharrefreplace'))\
                 .read()
 
@@ -331,28 +332,27 @@ class Shipment(object):
         if to_addr.get('address2'):
             shipping_request['ShipmentConfirmRequest']['Shipment']['ShipTo']['Address']['AddressLine2'] = to_addr['address2']
 
-        self.confirm_result = ups_conn._transmit_request('ship_confirm', shipping_request)
-
-        if 'ShipmentDigest' not in self.confirm_result.dict_response['ShipmentConfirmResponse']:
-            error_string = self.confirm_result.dict_response['ShipmentConfirmResponse']['Response']['Error']['ErrorDescription']
-            raise Exception(error_string)
-
         if amount is not None:
-            if 'PackageServiceOptions' not in shipping_request['ShipmentConfirmRequest']['Shipment']['Package']:
-                shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['PackageServiceOptions'] = {}
-            shipping_request['ShipmentConfirmRequest']['Shipment']['Package']['PackageServiceOptions']['COD'] = {
+            if 'ShipmentServiceOptions' not in shipping_request['ShipmentConfirmRequest']['Shipment']:
+                shipping_request['ShipmentConfirmRequest']['Shipment']['ShipmentServiceOptions'] = {}
+            shipping_request['ShipmentConfirmRequest']['Shipment']['ShipmentServiceOptions']['COD'] = {
                 #'COD': {
                     'CODCode': '3',
-                    'CODFundsCode': '0',
+                    'CODFundsCode': '1',
                     'CODAmount': {
                         'CurrencyCode': 'PLN',
-                        'MonetaryValue': '122.22',
+                        'MonetaryValue': amount,
                     }
                 #}
             }
 
         print shipping_request
 
+        self.confirm_result = ups_conn._transmit_request('ship_confirm', shipping_request)
+
+        if 'ShipmentDigest' not in self.confirm_result.dict_response['ShipmentConfirmResponse']:
+            error_string = self.confirm_result.dict_response['ShipmentConfirmResponse']['Response']['Error']['ErrorDescription']
+            raise Exception(error_string)
 
         confirm_result_digest = self.confirm_result.dict_response['ShipmentConfirmResponse']['ShipmentDigest']
         ship_accept_request = {
