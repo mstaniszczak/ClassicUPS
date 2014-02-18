@@ -89,7 +89,6 @@ class UPSConnection(object):
             url = self.test_urls[url_action]
 
         xml = self._generate_xml(url_action, ups_request)
-        print xml
         resp = urllib.urlopen(url, xml.encode('ascii', 'xmlcharrefreplace'))\
                 .read()
 
@@ -104,6 +103,8 @@ class UPSConnection(object):
 class UPSResult(object):
 
     def __init__(self, response):
+        #print "RESPONSE: "
+        #print response
         self.response = response
 
     @property
@@ -346,8 +347,6 @@ class Shipment(object):
                 #}
             }
 
-        print shipping_request
-
         self.confirm_result = ups_conn._transmit_request('ship_confirm', shipping_request)
 
         if 'ShipmentDigest' not in self.confirm_result.dict_response['ShipmentConfirmResponse']:
@@ -386,3 +385,13 @@ class Shipment(object):
 
     def save_label(self, fd):
         fd.write(self.get_label())
+
+    def get_label_html(self):
+        raw_epl = self.accept_result.dict_response['ShipmentAcceptResponse']['ShipmentResults']['CODTurnInPage']['Image']['GraphicImage'] #['PackageResults']['LabelImage']['HTMLImage']
+        return a2b_base64(raw_epl)
+
+    def save_label_html(self, fd):
+        try:
+            fd.write(self.get_label_html())
+        except:
+            pass
